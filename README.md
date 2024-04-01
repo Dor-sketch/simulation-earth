@@ -16,23 +16,28 @@ Developed for the **Biological Computation** class at the _Open University of Is
 
 <!-- code_chunk_output -->
 
+- [🌳 Background](#-background)
 - [🌟 Key Features](#-key-features)
-- [🛠️ Technical Implementation](#️-technical-implementation)
-  - [🛠️ Advanced Coding Techniques and Concepts](#️-advanced-coding-techniques-and-concepts)
 - [🚀 Getting Started](#-getting-started)
-  - [📦 Requirements](#-requirements)
-  - [🏃 Running the Simulation](#-running-the-simulation)
-  - [🧪 Testing and Analysis](#-testing-and-analysis)
 - [💡 Insights and Usage](#-insights-and-usage)
+- [🛠️ Technical Implementation](#️-technical-implementation)
 - [🖼️ Screenshots](#️-screenshots)
 - [📜 License](#-license)
 - [📫 Contact](#-contact)
 
 <!-- /code_chunk_output -->
 
-
-
 ---
+
+## 🌳 Background
+
+A cellular automata is a Computation model that is based on a world (grid) of cells, where each cell has a state and a set of rules that determine the state of the cell in the next generation. The rules are based on the state of the cell and the state of its neighbours. The rules are applied to all cells in the grid at the same time, and the next generation is calculated based on the current generation.
+
+The cellular automata model is a powerful tool for modeling complex systems, such as ecosystems, traffic flow, and even social dynamics. The model is based on the idea that complex systems can emerge from simple rules and interactions between individual elements. By simulating the interactions between individual elements, the model can capture the emergent properties of the system as a whole.
+
+For more information about cellular automata, see [Wikipedia](https://en.wikipedia.org/wiki/Cellular_automaton).
+
+This project is a simulation of Earth's ecosystem using cellular automata. The simulation is based on a 2D grid of cells, where each cell represents a different part of the ecosystem, such as the sea, mountains, or urban areas. The cells have different attributes, such as temperature, wind speed, rainfall, and pollution levels. The simulation evolves over time, with the cells' states changing based on the rules of the simulation.
 
 ## 🌟 Key Features
 
@@ -47,6 +52,47 @@ Developed for the **Biological Computation** class at the _Open University of Is
 - 🔩 **Modular Design:** Experiment with different simulation rules and initial states, adaptable to scenarios from board games to real-world ecosystem modeling.
 
 - 📊 **Statistical Analysis:** Delve into detailed statistics such as average values, standard deviation, and standard error, enriching the analytical depth.
+
+---
+
+## 🚀 Getting Started
+
+### 📦 Requirements
+
+- `matplotlib`: Powers the visualizations.
+- `tkinter`: Drives the GUI interface.
+
+### 🏃 Running the Simulation
+
+1. **Prepare the Environment:** Ensure `csv` files are placed in the same directory as the program.
+2. **Launch the Simulation:**
+
+    ```bash
+    python3 grid.py
+    # If multiple Python versions are installed:
+    python3.11 grid.py
+    ```
+
+3. **Customize Your Experience:** Modify simulation parameters, select initial states, and apply rules through the intuitive GUI.
+
+### 🧪 Testing and Analysis
+
+- **Example State:** Discover with `enums.csv`, which provides a sample initial state.
+- **Rich Data:** Access comprehensive statistics for in-depth analysis and insights.
+- **Rule Exploration:** Dive into various ecological outcomes by experimenting with different initial states and rules.
+
+    <p align="center">
+        Example Rule Exploration:
+        <img src="images/rule1.png"  title="Rule Exploration">
+        <img src="images/rule2.png"  title="Rule Exploration">
+        <img src="images/rule3.png"  title="Rule Exploration">
+    </p>
+
+---
+
+## 💡 Insights and Usage
+
+"Simulation Earth" is more than just a project; it's a journey into the interconnectedness of our environment. Through detailed testing and rule adjustment, we've uncovered significant correlations between pollution levels and other environmental aspects. The `manually increase temperature` rule, for example, demonstrates the profound impact of individual factors on the broader ecosystem.
 
 ---
 
@@ -131,45 +177,12 @@ These advanced techniques not only demonstrate robust programming practices but 
 
 ---
 
-## 🚀 Getting Started
-
-### 📦 Requirements
-
-- `matplotlib`: Powers the visualizations.
-- `tkinter`: Drives the GUI interface.
-
-### 🏃 Running the Simulation
-
-1. **Prepare the Environment:** Ensure `csv` files are placed in the same directory as the program.
-2. **Launch the Simulation:**
-
-    ```bash
-    python3 grid.py
-    # If multiple Python versions are installed:
-    python3.11 grid.py
-    ```
-
-3. **Customize Your Experience:** Modify simulation parameters, select initial states, and apply rules through the intuitive GUI.
-
-### 🧪 Testing and Analysis
-
-- **Example State:** Discover with `enums.csv`, which provides a sample initial state.
-- **Rich Data:** Access comprehensive statistics for in-depth analysis and insights.
-- **Rule Exploration:** Dive into various ecological outcomes by experimenting with different initial states and rules.
-
----
-
-## 💡 Insights and Usage
-
-"Simulation Earth" is more than just a project; it's a journey into the interconnectedness of our environment. Through detailed testing and rule adjustment, we've uncovered significant correlations between pollution levels and other environmental aspects. The `manually increase temperature` rule, for example, demonstrates the profound impact of individual factors on the broader ecosystem.
-
----
-
 ## 🖼️ Screenshots
 
 *Explore the GUI Interface and Statistics Panels*
 
 <p align="center">
+    The 3D effect is achieved by using a 2D grid with a color gradient.
   <img src="images/new_gui2.png"  title="Simulation Earth">
 </p>
 
