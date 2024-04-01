@@ -4,10 +4,10 @@ Welcome to "Simulation Earth" - a groundbreaking project that models our planet 
 
 In each cell of the grid, diverse ecosystems are represented, ranging from seas and mountains to urban landscapes. Key environmental attributes like temperature, wind speed, rainfall, and pollution levels are dynamically simulated. As each generation progresses, the cells' states evolve, creating a rich tapestry of interconnected ecological phenomena.
 
-Developed for the **Biological Computation** class at the _Open University of Israel_ in 2024, this project earned a perfect score of 100.
+Developed for the **Biological Computation** class at the _Open University of Israel_ in 2024, this project earned a perfect score of `100/100`.
 
 <p align="center">
-  <img src="images/cover.png"  title="Simulation Earth" width="400">
+  <img src="images/output.gif"  title="Simulation Earth">
 </p>
 
 ---
@@ -18,7 +18,11 @@ Developed for the **Biological Computation** class at the _Open University of Is
 
 - [🌟 Key Features](#-key-features)
 - [🛠️ Technical Implementation](#️-technical-implementation)
+  - [🛠️ Advanced Coding Techniques and Concepts](#️-advanced-coding-techniques-and-concepts)
 - [🚀 Getting Started](#-getting-started)
+  - [📦 Requirements](#-requirements)
+  - [🏃 Running the Simulation](#-running-the-simulation)
+  - [🧪 Testing and Analysis](#-testing-and-analysis)
 - [💡 Insights and Usage](#-insights-and-usage)
 - [🖼️ Screenshots](#️-screenshots)
 - [📜 License](#-license)
@@ -31,6 +35,10 @@ Developed for the **Biological Computation** class at the _Open University of Is
 ---
 
 ## 🌟 Key Features
+
+<p align="center">
+  <img src="images/new_gui1.png"  title="Simulation Earth">
+</p>
 
 - 🌐 **Dynamic World Modeling:** Explore complex cause-effect relationships as each cell's behavior evolves based on its environment and neighboring cells.
 
@@ -162,19 +170,24 @@ These advanced techniques not only demonstrate robust programming practices but 
 *Explore the GUI Interface and Statistics Panels*
 
 <p align="center">
-  <img src="images/gui.png"  title="GUI">
+  <img src="images/new_gui2.png"  title="Simulation Earth">
 </p>
 
 *Delve into Detailed Statistical Analysis Over Time*
 
 <p align="center">
-  <img src="images/stats.png"  title="Statistics">
+  <img src="images/new_gui3.png"  title="Statistics">
 </p>
 
 *Uncover the Correlation Between Pollution and Temperature*
 
 <p align="center">
   <img src="images/pollution_temp_connection.png"  title="Pollution-Temperature Connection">
+</p>
+
+<p align = "center">
+  <img src="images/close2.png"  title="Close-up">
+  <img src="images/close1.png"  title="Close-up">
 </p>
 
 ---

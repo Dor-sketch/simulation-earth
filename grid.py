@@ -6,6 +6,8 @@ import csv
 from CA import Cell
 from state import State, Landscape, WindDirection, WindSpeed, Temperature, Rain, AirQuality
 from GUI import SimulationGUI
+import textwrap
+import random
 
 
 def get_wind_direction_arrow(wind_direction):
@@ -165,54 +167,200 @@ class Grid:
         self.grid = new_grid
         self.calculate_statistics()
 
-    def draw(self, canvas):
+    def draw(self, canvas, cell_size=100):
         canvas.delete("all")
         cell_size = 1006 // max(self.rows, self.cols)
-        for y in range(self.rows):
-            for x in range(self.cols):
-                # TODO: why it draws the grid in reverse?
-                cell = self.grid[y][x]
-                color = cell.state.get_state_color()
-                canvas.create_rectangle(x * cell_size, y * cell_size,
-                                        (x + 1) * cell_size, (y + 1) * cell_size,
-                                        fill=color, outline='black')
-                self.draw_cell_details(
-                    canvas, cell, x * cell_size, y * cell_size, cell_size)
+
+        for y in range(self.rows - 1, -1, -1):
+            for x in range(self.cols - 1, -1, -1):
+                cell = self.grid[x][y]
+                base_color = cell.state.get_state_color()
+
+                # Convert the base color from hex to RGB
+                base_color = base_color.lstrip('#')
+                base_color = tuple(int(base_color[i:i+2], 16) for i in (0, 2, 4))
+
+                # Create a gradient effect for 3D illusion
+                for i in range(cell_size):
+                    intensity = int(255 * (i / cell_size))
+                    fill_color = tuple(min(intensity + base, 255) for base in base_color)
+                    fill_color_str = '#{:02x}{:02x}{:02x}'.format(*fill_color)
+                    canvas.create_rectangle(x * cell_size, y * cell_size + i,
+                                            (x + 1) * cell_size, y * cell_size + i + 1,
+                                            fill=fill_color_str, outline='')
+                shadow_depth = cell_size//4
+                # Draw a shadow for 3D illusion
+                for i in range(shadow_depth):  # Increase shadow size
+                    # Get the color of the cell edge where the shadow begins
+                    edge_intensity = int(255 * ((cell_size - shadow_depth + i) / cell_size))
+                    edge_color = tuple(min(edge_intensity + base, 255) for base in base_color)
+
+                    # Calculate the shadow color based on the edge color
+                    intensity = int(50 * ((shadow_depth - i) / (shadow_depth)))
+                    shadow_color = tuple(max(base - intensity, 0) for base in edge_color)
+                    # add dark blue shade to the shadow
+                    shadow_color_str = '#{:02x}{:02x}{:02x}'.format(*shadow_color)
+
+                    # Shadow on the right side of the cell
+                    canvas.create_rectangle((x + 1) * cell_size - shadow_depth + i, y * cell_size,
+                                            (x + 1) * cell_size - shadow_depth + i + 1, (y + 1) * cell_size,
+                                            fill=shadow_color_str, outline='')
+
+                    # Shadow on the bottom side of the cell
+                    canvas.create_rectangle(x * cell_size, (y + 1) * cell_size - shadow_depth + i,
+                                            (x + 1) * cell_size, (y + 1) * cell_size - shadow_depth + i + 1,
+                                            fill=shadow_color_str, outline='')
+
+                    # if clouds, draw random white ovals in light shade of blue
+                    if cell.state.clouds and i % 2 == 0:
+                        cloud_color = (255, 255, 255)  # White cloud color
+                        light_base_color = tuple(base + random.randint(0, 50) for base in base_color)  # Light shade of base color
+                        # make sure values are within 0-255
+                        light_base_color = tuple(min(max(c, 0), 255) for c in light_base_color)
+                        cloud_size = random.randint(cell_size // 10, cell_size // 8)  # Smaller cloud size
+                        cloud_x = x * cell_size + random.randint(0, cell_size - cloud_size)  # Random cloud position
+                        cloud_y = y * cell_size + random.randint(0, cell_size - cloud_size)  # Random cloud position
+                        # Blend the cloud color with a light shade of the base color
+                        blended_color = tuple(int((c1 + c2) / 2) for c1, c2 in zip(cloud_color, light_base_color))
+                        blended_color_str = '#{:02x}{:02x}{:02x}'.format(*blended_color)
+                        canvas.create_oval(cloud_x, cloud_y,
+                                           cloud_x + cloud_size, cloud_y + cloud_size,
+                                           fill=blended_color_str, outline='')
+
+                    if cell.state.land_type == Landscape.CITY:
+                        # Draw a city with gray buildings
+                        building_color = (128, 128, 128)
+                        building_color_str = '#{:02x}{:02x}{:02x}'.format(*building_color)
+                        building_size = cell_size // 4
+                        building_x = x * cell_size + cell_size // 2 - building_size // 2  # Center the building in the cell
+                        building_y = y * cell_size + cell_size // 2 - building_size // 2 + shadow_depth  # Center the building in the cell
+                        canvas.create_rectangle(building_x, building_y,
+                                            building_x + building_size, building_y + building_size,
+                                            fill=building_color_str, outline='')
+                        
+
+                    if cell.state.rainfall != Rain.NONE:
+                        rain_color = (0, 0, 255)
+                        rain_straight = cell.state.rainfall.value
+                        rain_size = rain_straight
+                        rain_color_str = '#{:02x}{:02x}{:02x}'.format(*rain_color)
+                        # if has pollution, make rain color much darker and add pollution color
+                        if cell.state.air_pollution != AirQuality.CLEAN:
+                            pollution_color = get_pollution_color(cell.state.air_pollution)
+                            rain_color = (0, 0, 20)
+                            rain_color = tuple(min(c + 50, 255) for c in rain_color)
+                            rain_color = tuple(max(c - 50, 0) for c in rain_color)
+                            rain_color = tuple(min(c + 50, 255) for c in rain_color)
+                            rain_color_str = '#{:02x}{:02x}{:02x}'.format(*rain_color)
+
+                        # Adjust the number of raindrops based on the rainfall strength
+                        for _ in range(int(rain_straight)):
+                            rain_x = x * cell_size + random.randint(0, cell_size - rain_size)
+                            rain_y = y * cell_size + random.randint(0, cell_size - rain_size)
+                            # Add a random offset to the end position to make the rain fall in different directions
+                            offset = random.randint(-rain_size, rain_size)
+                            canvas.create_line(rain_x, rain_y,
+                                               rain_x + offset, rain_y + rain_size,
+                                               fill=rain_color_str, width=2)
+
+
+                    if cell.state.land_type == Landscape.FOREST:
+                        # Draw a forest with green trees
+                        tree_color = (0, 100, 0)
+                        tree_color_str = '#{:02x}{:02x}{:02x}'.format(*tree_color)
+                        tree_size = cell_size // 4  # Smaller tree size
+                        tree_x = x * cell_size + cell_size // 2 - tree_size // 2  # Center the tree in the cell
+                        tree_y = y * cell_size + cell_size // 2 - tree_size // 2  # Center the tree in the cell
+                        # Draw a tree with a rectangle for the trunk and a circle for the crown
+                        canvas.create_rectangle(tree_x + tree_size // 3, tree_y + tree_size,
+                                            tree_x + 2 * tree_size // 3, tree_y + 2 * tree_size,
+                                            fill='brown', outline='')
+                        canvas.create_oval(tree_x, tree_y,
+                                        tree_x + tree_size, tree_y + tree_size,
+                                        fill=tree_color_str, outline='')
+
+                    if cell.state.land_type == Landscape.MOUNTAIN:
+                        # Draw a mountain with a triangle shape
+                        mountain_color = (205, 133, 63)  # Lighter shade of brown for a cooler look
+                        mountain_color_str = '#{:02x}{:02x}{:02x}'.format(*mountain_color)
+                        mountain_height = cell_size // 3  # Smaller mountain height
+                        mountain_base = cell_size // 3  # Smaller mountain base
+                        mountain_x = x * cell_size + cell_size // 2 - mountain_base // 2  # Center the mountain in the cell
+                        mountain_y = y * cell_size + cell_size - mountain_height
+                        # Draw a triangle with the peak at the top
+                        canvas.create_polygon(mountain_x, mountain_y,
+                                              mountain_x + mountain_base, mountain_y,
+                                              mountain_x + mountain_base // 2, mountain_y - mountain_height,
+                                              fill=mountain_color_str, outline='')
+                    if cell.state.land_type == Landscape.ICE:
+                        # Draw a snowflake with a hexagon shape
+                        snowflake_color = (240, 240, 255)  # Light shade of blue for a cooler look
+                        snowflake_color_str = '#{:02x}{:02x}{:02x}'.format(*snowflake_color)
+                        snowflake_size = cell_size // 4  # Smaller snowflake size
+                        snowflake_x = x * cell_size + cell_size // 2 - snowflake_size // 2  # Center the snowflake in the cell
+                        snowflake_y = y * cell_size + cell_size // 2 - snowflake_size // 2  # Center the snowflake in the cell
+                        # Draw a hexagon with the peak at the top
+                        canvas.create_polygon(snowflake_x, snowflake_y,
+                                              snowflake_x + snowflake_size, snowflake_y,
+                                              snowflake_x + 3 * snowflake_size // 2, snowflake_y + snowflake_size,
+                                              snowflake_x + snowflake_size, snowflake_y + 2 * snowflake_size,
+                                              snowflake_x, snowflake_y + 2 * snowflake_size,
+                                              snowflake_x - snowflake_size // 2, snowflake_y + snowflake_size,
+                                              fill=snowflake_color_str, outline='')
+
+                        if cell.state.land_type == Landscape.SEA:
+                            # Draw a sea with a blue color
+                            sea_color = (0, 0, 255)
+                            sea_color_str = '#{:02x}{:02x}{:02x}'.format(*sea_color)
+                            canvas.create_rectangle(x * cell_size, y * cell_size,
+                                                    (x + 1) * cell_size, (y + 1) * cell_size,
+                                                    fill=sea_color_str, outline='')
+                self.draw_cell_details(canvas, cell, x * cell_size, y * cell_size, cell_size)
 
     def draw_cell_details(self, canvas, cell, x, y, size):
-        details_y = y
+        details_y = y + 10
         text_gap = 16
         font = ('Arial', 10)
         # Larger, bold font for wind information
         wind_font = ('Arial', 10, 'bold')
+        shadow_size = size // 4  # Size of the shadow
+        text_center = x + (size - shadow_size) // 2  # Center of the cell excluding the shadow
+        text_width = size - 2 * shadow_size  # Width of the cell excluding the shadow
+
+        wrapper = textwrap.TextWrapper(width=text_width)
 
         land_type_text = f"{cell.state.land_type.name if cell.state.land_type else 'UNKNOWN'}"
-        canvas.create_text(x + size // 2, details_y + text_gap,
+        land_type_text = wrapper.fill(land_type_text)
+        canvas.create_text(text_center, details_y + text_gap,
                            text=land_type_text, fill='black', font=font)
 
         temp_text = f"Temp: {cell.state.temperature.name}"
-        canvas.create_text(x + size // 2, details_y + 2 * text_gap,
+        temp_text = wrapper.fill(temp_text)
+        canvas.create_text(text_center, details_y + 2 * text_gap,
                            text=temp_text, fill='black', font=font)
 
         wind_dir_arrow = get_wind_direction_arrow(cell.state.wind_direction)
         wind_text = f"Wind: {cell.state.wind_speed.name}, Dir: {wind_dir_arrow}"
-        canvas.create_text(x + size // 2, details_y + 3 * text_gap,
+        wind_text = wrapper.fill(wind_text)
+        canvas.create_text(text_center, details_y + 3 * text_gap,
                            text=wind_text, fill='black', font=wind_font)  # larger bold font
 
         # clouds in new line
         clouds_text = f"Clouds: {cell.state.clouds}"
-        canvas.create_text(x + size // 2, details_y + 4 * text_gap,
+        clouds_text = wrapper.fill(clouds_text)
+        canvas.create_text(text_center, details_y + 4 * text_gap,
                            text=clouds_text, fill='black', font=font)
 
         rain_text = f"Rain: {cell.state.rainfall.name}"
-        canvas.create_text(x + size // 2, details_y + 5 * text_gap,
+        rain_text = wrapper.fill(rain_text)
+        canvas.create_text(text_center, details_y + 5 * text_gap,
                            text=rain_text, fill='blue', font=font)
 
         pollution_color = get_pollution_color(cell.state.air_pollution)
         pollution_text = f"Pollution: {cell.state.air_pollution.name}"
-        canvas.create_text(x + size // 2, details_y + 6 * text_gap,
+        pollution_text = wrapper.fill(pollution_text)
+        canvas.create_text(text_center, details_y + 6 * text_gap,
                            text=pollution_text, fill=pollution_color, font=font)
-
     def apply_initial_conditions_csv(self, initial_conditions_file=None,
                                      initial_conditions=None):
         if initial_conditions_file is not None:

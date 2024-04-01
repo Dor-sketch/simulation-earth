@@ -249,6 +249,9 @@ class State:
         temp_color = temp_shade.get(self.temperature, (0, 0, 0))
         pollution_factor = pollution_shade.get(self.air_pollution, 1)
 
+        print(f"temp_color: {temp_color}, pollution_factor: {pollution_factor}")  # Debugging line
+
         color = tuple(min(int(base * pollution_factor + temp), 255)
                       for base, temp in zip(base_color, temp_color))
+
         return '#{:02x}{:02x}{:02x}'.format(*color)
