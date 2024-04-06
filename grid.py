@@ -8,6 +8,9 @@ from state import State, Landscape, WindDirection, WindSpeed, Temperature, Rain,
 from GUI import SimulationGUI
 import textwrap
 import random
+from PIL import Image
+from PIL import ImageTk
+import math
 
 
 def get_wind_direction_arrow(wind_direction):
@@ -191,53 +194,16 @@ class Grid:
                 shadow_depth = cell_size//4
                 # Draw a shadow for 3D illusion
                 for i in range(shadow_depth):  # Increase shadow size
-                    # Get the color of the cell edge where the shadow begins
-                    edge_intensity = int(255 * ((cell_size - shadow_depth + i) / cell_size))
-                    edge_color = tuple(min(edge_intensity + base, 255) for base in base_color)
-
-                    # Calculate the shadow color based on the edge color
-                    intensity = int(50 * ((shadow_depth - i) / (shadow_depth)))
-                    shadow_color = tuple(max(base - intensity, 0) for base in edge_color)
-                    # add dark blue shade to the shadow
-                    shadow_color_str = '#{:02x}{:02x}{:02x}'.format(*shadow_color)
-
-                    # Shadow on the right side of the cell
-                    canvas.create_rectangle((x + 1) * cell_size - shadow_depth + i, y * cell_size,
-                                            (x + 1) * cell_size - shadow_depth + i + 1, (y + 1) * cell_size,
-                                            fill=shadow_color_str, outline='')
-
-                    # Shadow on the bottom side of the cell
-                    canvas.create_rectangle(x * cell_size, (y + 1) * cell_size - shadow_depth + i,
-                                            (x + 1) * cell_size, (y + 1) * cell_size - shadow_depth + i + 1,
-                                            fill=shadow_color_str, outline='')
+                    self.draw_shadow(canvas, cell, x, y, cell_size, shadow_depth, base_color, i)
 
                     # if clouds, draw random white ovals in light shade of blue
                     if cell.state.clouds and i % 2 == 0:
-                        cloud_color = (255, 255, 255)  # White cloud color
-                        light_base_color = tuple(base + random.randint(0, 50) for base in base_color)  # Light shade of base color
-                        # make sure values are within 0-255
-                        light_base_color = tuple(min(max(c, 0), 255) for c in light_base_color)
-                        cloud_size = random.randint(cell_size // 10, cell_size // 8)  # Smaller cloud size
-                        cloud_x = x * cell_size + random.randint(0, cell_size - cloud_size)  # Random cloud position
-                        cloud_y = y * cell_size + random.randint(0, cell_size - cloud_size)  # Random cloud position
-                        # Blend the cloud color with a light shade of the base color
-                        blended_color = tuple(int((c1 + c2) / 2) for c1, c2 in zip(cloud_color, light_base_color))
-                        blended_color_str = '#{:02x}{:02x}{:02x}'.format(*blended_color)
-                        canvas.create_oval(cloud_x, cloud_y,
-                                           cloud_x + cloud_size, cloud_y + cloud_size,
-                                           fill=blended_color_str, outline='')
+                        self.draw_clouds(canvas, cell, x, y, cell_size, base_color)
+
 
                     if cell.state.land_type == Landscape.CITY:
                         # Draw a city with gray buildings
-                        building_color = (128, 128, 128)
-                        building_color_str = '#{:02x}{:02x}{:02x}'.format(*building_color)
-                        building_size = cell_size // 4
-                        building_x = x * cell_size + cell_size // 2 - building_size // 2  # Center the building in the cell
-                        building_y = y * cell_size + cell_size // 2 - building_size // 2 + shadow_depth  # Center the building in the cell
-                        canvas.create_rectangle(building_x, building_y,
-                                            building_x + building_size, building_y + building_size,
-                                            fill=building_color_str, outline='')
-                        
+                        self.draw_building(canvas, cell, x, y, cell_size, shadow_depth)
 
                     if cell.state.rainfall != Rain.NONE:
                         rain_color = (0, 0, 255)
@@ -266,47 +232,14 @@ class Grid:
 
                     if cell.state.land_type == Landscape.FOREST:
                         # Draw a forest with green trees
-                        tree_color = (0, 100, 0)
-                        tree_color_str = '#{:02x}{:02x}{:02x}'.format(*tree_color)
-                        tree_size = cell_size // 4  # Smaller tree size
-                        tree_x = x * cell_size + cell_size // 2 - tree_size // 2  # Center the tree in the cell
-                        tree_y = y * cell_size + cell_size // 2 - tree_size // 2  # Center the tree in the cell
-                        # Draw a tree with a rectangle for the trunk and a circle for the crown
-                        canvas.create_rectangle(tree_x + tree_size // 3, tree_y + tree_size,
-                                            tree_x + 2 * tree_size // 3, tree_y + 2 * tree_size,
-                                            fill='brown', outline='')
-                        canvas.create_oval(tree_x, tree_y,
-                                        tree_x + tree_size, tree_y + tree_size,
-                                        fill=tree_color_str, outline='')
+                        self.draw_tree(canvas, cell, x, y, cell_size, base_color)
+
 
                     if cell.state.land_type == Landscape.MOUNTAIN:
-                        # Draw a mountain with a triangle shape
-                        mountain_color = (205, 133, 63)  # Lighter shade of brown for a cooler look
-                        mountain_color_str = '#{:02x}{:02x}{:02x}'.format(*mountain_color)
-                        mountain_height = cell_size // 3  # Smaller mountain height
-                        mountain_base = cell_size // 3  # Smaller mountain base
-                        mountain_x = x * cell_size + cell_size // 2 - mountain_base // 2  # Center the mountain in the cell
-                        mountain_y = y * cell_size + cell_size - mountain_height
-                        # Draw a triangle with the peak at the top
-                        canvas.create_polygon(mountain_x, mountain_y,
-                                              mountain_x + mountain_base, mountain_y,
-                                              mountain_x + mountain_base // 2, mountain_y - mountain_height,
-                                              fill=mountain_color_str, outline='')
+                        self.draw_mountains(canvas, cell, x, y, cell_size)
+
                     if cell.state.land_type == Landscape.ICE:
-                        # Draw a snowflake with a hexagon shape
-                        snowflake_color = (240, 240, 255)  # Light shade of blue for a cooler look
-                        snowflake_color_str = '#{:02x}{:02x}{:02x}'.format(*snowflake_color)
-                        snowflake_size = cell_size // 4  # Smaller snowflake size
-                        snowflake_x = x * cell_size + cell_size // 2 - snowflake_size // 2  # Center the snowflake in the cell
-                        snowflake_y = y * cell_size + cell_size // 2 - snowflake_size // 2  # Center the snowflake in the cell
-                        # Draw a hexagon with the peak at the top
-                        canvas.create_polygon(snowflake_x, snowflake_y,
-                                              snowflake_x + snowflake_size, snowflake_y,
-                                              snowflake_x + 3 * snowflake_size // 2, snowflake_y + snowflake_size,
-                                              snowflake_x + snowflake_size, snowflake_y + 2 * snowflake_size,
-                                              snowflake_x, snowflake_y + 2 * snowflake_size,
-                                              snowflake_x - snowflake_size // 2, snowflake_y + snowflake_size,
-                                              fill=snowflake_color_str, outline='')
+                        self.draw_ice(canvas, cell, x, y, cell_size)
 
                         if cell.state.land_type == Landscape.SEA:
                             # Draw a sea with a blue color
@@ -317,14 +250,197 @@ class Grid:
                                                     fill=sea_color_str, outline='')
                 self.draw_cell_details(canvas, cell, x * cell_size, y * cell_size, cell_size)
 
+    def draw_shadow2(self, canvas, cell, x, y, size, shadow_size, base_color=(0, 0, 0), i = 0):
+        # Get the color of the cell edge where the shadow begins
+        edge_intensity = int(255 * ((size - shadow_size + i) / size))
+        edge_color = tuple(min(edge_intensity + base, 255) for base in base_color)
+        # Calculate the shadow color based on the edge color
+        intensity = int(50 * ((shadow_size - i) / (shadow_size)))
+        shadow_color = tuple(max(base - intensity, 0) for base in edge_color)
+        # add dark blue shade to the shadow
+        shadow_color_str = '#{:02x}{:02x}{:02x}'.format(*shadow_color)
+        # Shadow on the right side of the cell
+        canvas.create_rectangle((x + 1) * size - shadow_size + i, y * size,
+                                (x + 1) * size - shadow_size + i + 1, (y + 1) * size,
+                                fill=shadow_color_str, outline='')
+        # Shadow on the bottom side of the cell
+        canvas.create_rectangle(x * size, (y + 1) * size - shadow_size + i,
+                                (x + 1) * size, (y + 1) * size - shadow_size + i + 1,
+                                fill=shadow_color_str, outline='')
+
+    def draw_shadow3(self, canvas, cell, x, y, size, shadow_size, base_color=(0, 0, 0), i = 0):
+        """
+        draw box
+        """
+        # Get the color of the cell edge where the shadow begins
+        edge_intensity = int(255 * ((size - shadow_size + i) / size))
+        edge_color = tuple(min(edge_intensity + base, 255) for base in base_color)
+        # Calculate the shadow color based on the edge color
+        intensity = int(250 * ((shadow_size - i) / (shadow_size)))
+        shadow_color = tuple(max(base - intensity, 0) for base in edge_color)
+        # add dark blue shade to the shadow
+        shadow_color_str = '#{:02x}{:02x}{:02x}'.format(*shadow_color)
+        # Shadow on the right side of the cell
+        canvas.create_rectangle((x + 1) * size - shadow_size + i, y * size,
+                                (x + 1) * size - shadow_size + i + 1, (y + 1) * size,
+                                fill=shadow_color_str, outline='')
+        # Shadow on the bottom side of the cell
+        canvas.create_rectangle(x * size, (y + 1) * size - shadow_size + i,
+                                (x + 1) * size, (y + 1) * size - shadow_size + i + 1,
+                                fill=shadow_color_str, outline='')
+        # Shadow on the left side of the cell
+        canvas.create_rectangle(x * size, y * size,
+                                x * size + shadow_size - i, (y + 1) * size,
+                                fill=shadow_color_str, outline='')
+        # Shadow on the top side of the cell
+        canvas.create_rectangle(x * size, y * size,
+                                (x + 1) * size, y * size + shadow_size - i,
+                                fill=shadow_color_str, outline='')
+
+    def draw_shadow(self, canvas, cell, x, y, size, shadow_size, base_color=(0, 0, 0), i = 0):
+        # Get the color of the cell edge where the shadow begins
+
+        edge_intensity = int(185 * ((size - shadow_size + i) / size))
+        edge_color = tuple(min(edge_intensity + base, 255) for base in base_color)
+        # Calculate the shadow color based on the edge color
+        intensity = int(100 * ((shadow_size - i) / (shadow_size)))
+        shadow_color = tuple(max(base - intensity, 0) for base in edge_color)
+        # add dark blue shade to the shadow
+        shadow_color_str = '#{:02x}{:02x}{:02x}'.format(*shadow_color)
+        # Create 8 rectangles to form a hexagonal shadow
+                # Shadow on the right side of the cell
+        # Diagonal rectangle-like polygon
+        # Create six polygons to form a hexagonal shadow
+        for j in range(6):
+            angle = math.pi / 3 * j
+            dx = shadow_size * math.cos(angle) * (i) // 57  # Add an offset based on i
+            dy = shadow_size * math.sin(angle) * (i) // 57  # Add an offset based on i
+            canvas.create_polygon([(x + 0.5) * size + dx + shadow_size * math.cos(angle),
+                                   (y + 0.5) * size + dy + shadow_size * math.sin(angle),
+                                   (x + 0.5) * size + dx + shadow_size * math.cos(angle + math.pi / 3),
+                                   (y + 0.5) * size + dy + shadow_size * math.sin(angle + math.pi / 3),
+                                   (x + 0.5) * size + dx + shadow_size * math.cos(angle - math.pi / 3),
+                                   (y + 0.5) * size + dy + shadow_size * math.sin(angle - math.pi / 3)],
+                                  fill=shadow_color_str, outline='')
+        self.draw_shadow3(canvas, cell, x, y, size, shadow_size, base_color, i)
+
+    def draw_ice(self, canvas, cell, x, y, size):
+        # Draw a snowflake with a hexagon shape
+        snowflake_color = (240, 240, 255)  # Light shade of blue for a cooler look
+        snowflake_color_str = '#{:02x}{:02x}{:02x}'.format(*snowflake_color)
+        snowflake_size = size // 4  # Smaller snowflake size
+        snowflake_x = x * size + size // 2 - snowflake_size // 2  # Center the snowflake in the cell
+        snowflake_y = y * size + size // 2 - snowflake_size // 2  # Center the snowflake in the cell
+        # Draw a hexagon with the peak at the top
+        canvas.create_polygon(snowflake_x, snowflake_y,
+                              snowflake_x + snowflake_size, snowflake_y,
+                              snowflake_x + 3 * snowflake_size // 2, snowflake_y + snowflake_size,
+                              snowflake_x + snowflake_size, snowflake_y + 2 * snowflake_size,
+                              snowflake_x, snowflake_y + 2 * snowflake_size,
+                              snowflake_x - snowflake_size // 2, snowflake_y + snowflake_size,
+                              fill=snowflake_color_str, outline='')
+
+    def draw_mountains(self, canvas, cell, x, y, size):
+         # Draw a mountain with a triangle shape
+        mountain_color = (205, 133, 63)  # Lighter shade of brown for a cooler look
+        mountain_color_str = '#{:02x}{:02x}{:02x}'.format(*mountain_color)
+        mountain_height = size // 3  # Smaller mountain height
+        mountain_base = size // 3  # Smaller mountain base
+        mountain_x = x * size + size // 2 - mountain_base // 2  # Center the mountain in the cell
+        mountain_y = y * size + size - mountain_height
+        # Draw a triangle with the peak at the top
+        canvas.create_polygon(mountain_x, mountain_y,
+                              mountain_x + mountain_base, mountain_y,
+                              mountain_x + mountain_base // 2, mountain_y - mountain_height,
+                              fill=mountain_color_str, outline='')
+
+    def draw_tree(self, canvas, cell, x, y, size, base_color=(0, 100, 0)):
+        tree_color = (0, 100, 0)
+        tree_color_str = '#{:02x}{:02x}{:02x}'.format(*tree_color)
+        tree_size = size // 4  # Smaller tree size
+        tree_x = x * size + size // 2 - tree_size // 2  # Center the tree in the cell
+        tree_y = y * size + size // 2 - tree_size // 2  # Center the tree in the cell
+        # Draw a tree with a rectangle for the trunk and a circle for the crown
+        canvas.create_rectangle(tree_x + tree_size // 3, tree_y + tree_size,
+                            tree_x + 2 * tree_size // 3, tree_y + 2 * tree_size,
+                            fill='brown', outline='')
+        canvas.create_oval(tree_x, tree_y,
+                        tree_x + tree_size, tree_y + tree_size,
+                        fill=tree_color_str, outline='')
+
+        # self.draw_apple_logo(canvas, cell, x, y, size, base_color)
+
+    def draw_apple_logo(self, canvas, cell, x, y, size, base_color=(0, 100, 0)):
+        # Define the size and position of the apple
+        apple_size = size // 4
+        apple_x = x * size + size // 2 - apple_size // 2
+        apple_y = y * size + size // 2 - apple_size // 2
+
+        # Draw the main body of the apple
+        canvas.create_oval(apple_x, apple_y, apple_x + apple_size, apple_y + apple_size, fill='red', outline='')
+
+        # Draw the top indent of the apple
+        indent_size = apple_size // 4
+        indent_x1 = apple_x + apple_size // 2 - indent_size // 2
+        indent_y1 = apple_y
+        indent_x2 = apple_x + apple_size // 2 + indent_size // 2
+        indent_y2 = apple_y + indent_size
+        canvas.create_arc(indent_x1, indent_y1, indent_x2, indent_y2, start=0, extent=180, fill='red', outline='')
+        canvas.create_arc(indent_x1, indent_y1, indent_x2, indent_y2, start=180, extent=180, fill='red', outline='')
+        # Define the size and position of the bite
+        bite_size = apple_size // 2
+        bite_x = apple_x + apple_size - bite_size // 2
+        bite_y = apple_y + bite_size // 2
+
+        # Create a gradient effect for the bite
+        for i in range(bite_size):
+            for j in range(bite_size):
+                # Calculate the distance from the center of the bite
+                distance = ((i - bite_size // 2) ** 2 + (j - bite_size // 2) ** 2) ** 0.5
+
+                # Only draw the pixel if it's inside the bite
+                if distance <= bite_size // 2:
+                    intensity = int(255 * (i / bite_size))
+                    fill_color = tuple(min(intensity + base, 255) for base in base_color)
+                    fill_color_str = '#{:02x}{:02x}{:02x}'.format(*fill_color)
+                    canvas.create_rectangle(bite_x + j, bite_y + i,
+                                            bite_x + j + 1, bite_y + i + 1,
+                                            fill=fill_color_str, outline='')
+
+
+    def draw_building(self, canvas, cell, x, y, size, shadow_size):
+        building_color = (128, 128, 128)
+        building_color_str = '#{:02x}{:02x}{:02x}'.format(*building_color)
+        building_size = size // 4
+        building_x = x * size + size // 2 - building_size // 2  # Center the building in the cell
+        building_y = y * size + size // 2 - building_size // 2 + shadow_size  # Center the building in the cell
+        canvas.create_rectangle(building_x, building_y,
+                            building_x + building_size, building_y + building_size,
+                            fill=building_color_str, outline='')
+
+    def draw_clouds(self, canvas, cell, x, y, size, base_color):
+        cloud_color = (255, 255, 255)  # White cloud color
+        light_base_color = tuple(base + random.randint(0, 50) for base in base_color)  # Light shade of base color
+        # make sure values are within 0-255
+        light_base_color = tuple(min(max(c, 0), 255) for c in light_base_color)
+        cloud_size = random.randint(size // 10, size // 8)  # Smaller cloud size
+        cloud_x = x * size + random.randint(0, size - cloud_size)  # Random cloud position
+        cloud_y = y * size + random.randint(0, size - cloud_size)  # Random cloud position
+        # Blend the cloud color with a light shade of the base color
+        blended_color = tuple(int((c1 + c2) / 2) for c1, c2 in zip(cloud_color, light_base_color))
+        blended_color_str = '#{:02x}{:02x}{:02x}'.format(*blended_color)
+        canvas.create_oval(cloud_x, cloud_y,
+                           cloud_x + cloud_size, cloud_y + cloud_size,
+                           fill=blended_color_str, outline='')
+
     def draw_cell_details(self, canvas, cell, x, y, size):
-        details_y = y + 10
+        details_y = y + 22
         text_gap = 16
         font = ('Arial', 10)
         # Larger, bold font for wind information
         wind_font = ('Arial', 10, 'bold')
         shadow_size = size // 4  # Size of the shadow
-        text_center = x + (size - shadow_size) // 2  # Center of the cell excluding the shadow
+        text_center = x + 22+ (size - shadow_size) // 2  # Center of the cell excluding the shadow
         text_width = size - 2 * shadow_size  # Width of the cell excluding the shadow
 
         wrapper = textwrap.TextWrapper(width=text_width)

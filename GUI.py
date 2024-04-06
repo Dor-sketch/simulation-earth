@@ -8,7 +8,7 @@ from rules import TransitionRules
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-
+plt.style.use('dark_background')
 class SimulationGUI:
     def __init__(self, world):
         self.world = world
