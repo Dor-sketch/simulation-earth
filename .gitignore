@@ -4,3 +4,10 @@ game.py
 .DS_Store
 
 *.mov
+/src/build/*
+/src/gradient_images/*
+!/src/gradient_images/FOREST.png
+!/src/gradient_images/SEA.png
+!/src/gradient_images/LAND.png
+!/src/gradient_images/CITY.png
+!/src/gradient_images/ICE.png

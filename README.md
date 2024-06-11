@@ -6,6 +6,8 @@ In each cell of the grid, diverse ecosystems are represented, ranging from seas 
 
 Developed for the **Biological Computation** class at the _Open University of Israel_ in 2024, this project earned a perfect score of `100/100`.
 
+> **Update:** The project is now available as an online executable on [itch.io](https://dor-sketch.itch.io/simulation-earth) for easy access and exploration.
+
 <p align="center">
   <img src="images/output.gif"  title="Simulation Earth">
 </p>
@@ -214,3 +216,44 @@ This project is open-sourced under the MIT License - see the [LICENSE](LICENSE) 
 ## 📫 Contact
 
 For inquiries, collaborations, or more information, feel free to connect with me on [LinkedIn](https://www.linkedin.com/in/dor-pascal/).
+
+
+def draw_3d_cells(screen, rect, color_hex):
+    color = hex_to_rgb(color_hex)
+    darker_color = [max(0, c - 100) for c in color]  # Increase the difference for a stronger 3D effect
+    lighter_color = [min(255, c + 100) for c in color]  # Increase the difference for a stronger 3D effect
+
+    gradient_name = f"{color_hex}_gradient.png"
+    gradient_path = os.path.join("gradient_images", gradient_name)
+
+    if not os.path.exists(gradient_path):
+        # Create a gradient surface
+        gradient_surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        # color it with the darker color
+        gradient_surface.fill(darker_color)
+
+        for y in range(rect.height):
+            for x in range(rect.width):
+                # Calculate distance to the edges of the rectangle
+                dist_x = min(x / rect.width, 1 - x / rect.width)
+                dist_y = min(y / rect.height, 1 - y / rect.height)
+                dist = 1 - min(dist_x, dist_y)
+
+                # Define a threshold where the gradient stops
+                threshold = 0.7
+
+                if dist < threshold:
+                    # If the distance is less than the threshold, use the lighter color
+                    continue
+                else:
+                    # If the distance is greater than the threshold, interpolate between the darker and lighter color
+                    dist = (dist - threshold) / (1 - threshold)  # Normalize dist to the range [0, 1]
+                    color = [int(dark * (1 - dist) + light * dist) for light, dark in zip(lighter_color, darker_color)]
+
+                gradient_surface.set_at((x, y), color)  # Set the pixel color on the gradient surface
+        # Save the gradient surface as an image
+        pygame.image.save(gradient_surface, gradient_path)
+
+    # Load the gradient image and draw it onto the screen
+    gradient_image = pygame.image.load(gradient_path)
+    screen.blit(gradient_image, rect)
