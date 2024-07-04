@@ -5,9 +5,9 @@ game.py
 
 *.mov
 /src/build/*
-/src/gradient_images/*
-!/src/gradient_images/FOREST.png
-!/src/gradient_images/SEA.png
-!/src/gradient_images/LAND.png
-!/src/gradient_images/CITY.png
-!/src/gradient_images/ICE.png
+/docs/gradient_images/*
+!/docs/gradient_images/FOREST.png
+!/docs/gradient_images/SEA.png
+!/docs/gradient_images/LAND.png
+!/docs/gradient_images/CITY.png
+!/docs/gradient_images/ICE.png
