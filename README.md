@@ -9,7 +9,7 @@ Developed for the **Biological Computation** class at the _Open University of Is
 > **Update:** The project is now available as an online executable on [itch.io](https://dor-sketch.itch.io/simulation-earth) for easy access and exploration.
 
 <p align="center">
-  <img src="images/output.gif"  title="Simulation Earth">
+  <img src="docs/images/output.gif"  title="Simulation Earth">
 </p>
 
 ---
@@ -44,7 +44,7 @@ This project is a simulation of Earth's ecosystem using cellular automata. The s
 ## 🌟 Key Features
 
 <p align="center">
-  <img src="images/new_gui1.png"  title="Simulation Earth">
+  <img src="docs/images/new_gui1.png"  title="Simulation Earth">
 </p>
 
 - 🌐 **Dynamic World Modeling:** Explore complex cause-effect relationships as each cell's behavior evolves based on its environment and neighboring cells.
@@ -85,9 +85,9 @@ This project is a simulation of Earth's ecosystem using cellular automata. The s
 
     <p align="center">
         Example Rule Exploration:
-        <img src="images/rule1.png"  title="Rule Exploration">
-        <img src="images/rule2.png"  title="Rule Exploration">
-        <img src="images/rule3.png"  title="Rule Exploration">
+        <img src="docs/images/rule1.png"  title="Rule Exploration">
+        <img src="docs/images/rule2.png"  title="Rule Exploration">
+        <img src="docs/images/rule3.png"  title="Rule Exploration">
     </p>
 
 ---
@@ -185,75 +185,34 @@ These advanced techniques not only demonstrate robust programming practices but 
 
 <p align="center">
     The 3D effect is achieved by using a 2D grid with a color gradient.
-  <img src="images/new_gui2.png"  title="Simulation Earth">
+  <img src="docs/images/new_gui2.png"  title="Simulation Earth">
 </p>
 
 *Delve into Detailed Statistical Analysis Over Time*
 
 <p align="center">
-  <img src="images/new_gui3.png"  title="Statistics">
+  <img src="docs/images/new_gui3.png"  title="Statistics">
 </p>
 
 *Uncover the Correlation Between Pollution and Temperature*
 
 <p align="center">
-  <img src="images/pollution_temp_connection.png"  title="Pollution-Temperature Connection">
+  <img src="docs/images/pollution_temp_connection.png"  title="Pollution-Temperature Connection">
 </p>
 
 <p align = "center">
-  <img src="images/close2.png"  title="Close-up">
-  <img src="images/close1.png"  title="Close-up">
+  <img src="docs/images/close2.png"  title="Close-up">
+  <img src="docs/images/close1.png"  title="Close-up">
 </p>
 
 ---
 
 ## 📜 License
 
-This project is open-sourced under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is open-sourced under the MIT License - see the [LICENSE](docs/LICENSE) file for details.
 
 ---
 
 ## 📫 Contact
 
 For inquiries, collaborations, or more information, feel free to connect with me on [LinkedIn](https://www.linkedin.com/in/dor-pascal/).
-
-
-def draw_3d_cells(screen, rect, color_hex):
-    color = hex_to_rgb(color_hex)
-    darker_color = [max(0, c - 100) for c in color]  # Increase the difference for a stronger 3D effect
-    lighter_color = [min(255, c + 100) for c in color]  # Increase the difference for a stronger 3D effect
-
-    gradient_name = f"{color_hex}_gradient.png"
-    gradient_path = os.path.join("gradient_images", gradient_name)
-
-    if not os.path.exists(gradient_path):
-        # Create a gradient surface
-        gradient_surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-        # color it with the darker color
-        gradient_surface.fill(darker_color)
-
-        for y in range(rect.height):
-            for x in range(rect.width):
-                # Calculate distance to the edges of the rectangle
-                dist_x = min(x / rect.width, 1 - x / rect.width)
-                dist_y = min(y / rect.height, 1 - y / rect.height)
-                dist = 1 - min(dist_x, dist_y)
-
-                # Define a threshold where the gradient stops
-                threshold = 0.7
-
-                if dist < threshold:
-                    # If the distance is less than the threshold, use the lighter color
-                    continue
-                else:
-                    # If the distance is greater than the threshold, interpolate between the darker and lighter color
-                    dist = (dist - threshold) / (1 - threshold)  # Normalize dist to the range [0, 1]
-                    color = [int(dark * (1 - dist) + light * dist) for light, dark in zip(lighter_color, darker_color)]
-
-                gradient_surface.set_at((x, y), color)  # Set the pixel color on the gradient surface
-        # Save the gradient surface as an image
-        pygame.image.save(gradient_surface, gradient_path)
-
-    # Load the gradient image and draw it onto the screen
-    gradient_image = pygame.image.load(gradient_path)
-    screen.blit(gradient_image, rect)

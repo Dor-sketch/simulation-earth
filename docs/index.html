@@ -1,489 +1,337 @@
-<html lang="en-us"><script src="https://pygame-web.github.io/archives/0.9/pythons.js" type=module id=site data-LINES=57 data-CONSOLE=25 data-python=python3.12 data-os=vtx,fs,snd,gui async defer>#<!--
-
-print("""
-Loading src from src.apk
-    Pygbag Version : 0.9.1
-    Template Version : 0.9.0
-    Python  : 3.12
-    CDN URL : https://pygame-web.github.io/archives/0.9/
-    Screen  : 1280x720
-    Title   : src
-    Folder  : src
-    Authors : pgw
-    SPDX-License-Identifier: cookiecutter.spdx
-
-""")
-
-
-# screen pixels (real, hardware)
-WIDTH=1024  # 1280
-HEIGHT=600  # 720
-
-# reference/idealized screen pixels
-REFX = 1980
-REFY = 1080
-
-def u(real, ref, v):
-    if abs(v)<0.9999999:
-        result = int( (float(real)/100.0) * (v*1000))
-        if v<0:
-            return real-result
-        return result
-    return int( (real/ref) * v )
-
-def ux(*argv):
-    global WIDTH, REFX
-    acc = 0
-    for v in argv:
-        acc += u(WIDTH, REFX, v)
-    return acc
-
-def uy(*argv):
-    global HEIGHT, REFY
-    acc = 0
-    for v in argv:
-        acc += u(HEIGHT, REFY, v)
-    return acc
-
-
-
-
-# do not rename
-async def custom_site():
-
-    import sys
-    import asyncio
-    import platform
-    import json
-    from pathlib import Path
-
-
-
-    import embed
-
-
-    platform.document.body.style.background = "#7f7f7f"
-
-    import pygame
-
-    def compose():
-        pygame.display.update()
-        window.chromakey(None, *screen.get_colorkey(), 40)
-
-    pygame.init()
-    pygame.font.init()
-
-    screen = pygame.display.set_mode([ux(.100),uy(.100)], pygame.SRCALPHA, 32)
-    screen.set_colorkey( (0,0,0,0), pygame.RLEACCEL )
-    screen.fill( (0,0,0,0) )
-
-    compose()
-
-    platform.window.transfer.hidden = true
-    platform.window.canvas.style.visibility = "visible"
-
-
-
-    apk = "src.apk"
-
-    bundle = "src"
-
-    # the C or js loader could do that but be explicit.
-    appdir = Path(f"/data/data/{bundle}") # /data/data/src
-    appdir.mkdir()
-
-
-    # mount apk
-
-    cfg = {
-        "io": "url",
-        "type":"mount",
-        "mount" : {
-            "point" : appdir.as_posix(),
-            "path" : "/",
-        },
-        "path" : f"/ => {appdir.as_posix()}",
-    }
-
-
-    track = platform.window.MM.prepare(apk, json.dumps(cfg))
-
-    marginx = ux(.020) # 20%
-    marginy = uy(.045) # 45%
-
-
-    def pg_bar(pos):
-        nonlocal marginx, marginy
-        # resolution of progress bar, recalculate since it may not be know yet.
-        total = track.len or 10  # avoid div0
-        slot = ux(.060)/ total # 60%
-
-        pygame.draw.rect(screen,(10,10,10),( marginx-ux(10), marginy-uy(10), (total*slot)+ux(20), uy(110) ) )
-        pygame.draw.rect(screen,(0,255,0), ( marginx, marginy, track.pos*slot, uy(90)) )
-
-    # wait until zip mount + overlayfs is complete
-    while not track.ready:
-        pg_bar(track.pos)
-        compose()
-        await asyncio.sleep(.1)
-
-    # fill it up in case it was cached and instant download
-    pg_bar(track.len)
-    compose()
-
-
-    # preloader will change dir and prepend it to sys.path
-    platform.run_main(PyConfig, loaderhome= appdir / "assets", loadermain=None)
-
-
-    # wait preloading complete
-    # that includes images and wasm compilation of bundled modules
-    while embed.counter()<0:
-        await asyncio.sleep(.1)
-
-    main = appdir / "assets" / "main.py"
-
-    # start async top level machinery and add a console.
-    await TopLevel_async_handler.start_toplevel(platform.shell, console=window.python.config.debug)
-
-    # now that apk is mounted we have access to font cache
-    # but we need to fill __file__ that is not yet set
-    __import__(__name__).__file__ = str(main)
-
-
-    # now make a prompt
-    fnt = pygame.sysfont.SysFont("freesans",  uy(80) )
-
-    def ui_callback(pkg, error=None):
-        nonlocal fnt
-        if error:
-            prompt = fnt.render(f"{error}", True, "black")
-        else:
-            prompt = fnt.render(f"Setting [{pkg}] up", True, "black")
-        pg_bar(track.len)
-        screen.blit(prompt, ( marginx+ ux(80), marginy - uy(10) ) )
-        compose()
-
-    # test/wait if user media interaction required
-    if not platform.window.MM.UME:
-
-        # now make a prompt
-        fnt = pygame.sysfont.SysFont("freesans",  uy(80) )
-        prompt = fnt.render("Ready to start !", True, "blue")
-        pg_bar(track.len)
-        screen.blit(prompt, ( marginx+ ux(80), marginy - uy(10) ) )
-        compose()
-        print("""
-        * Waiting for media user engagement : please click/touch page *
-    """)
-        while not platform.window.MM.UME:
-            await asyncio.sleep(.1)
-
-    # cleanup
-    screen.fill( (0,0,0,0) )
-    pygame.display.flip()
-
-    await shell.runpy(main, callback=ui_callback)
-
-
-
-import asyncio
-
-asyncio.run( custom_site() )
-
-
-
-
-
-
-
-
-
-
-
-
-# BEGIN BLOCK
-#
-# now this is the html part you can (and should) customize
-# It is not mandatory : pygame-script when it reads the first line (also called
-# shebang ) of above code create absolute minimal widget set
-# required for running with default rules
-#
-# do not alter that comment block it is separating python code from html code
-# =============================================================================
-# --></script><head><!--
-//=============================================================================
-//
-//
-//
-//
-//
-//
-//
-
-    {%- if cookiecutter.comment != "" -%}
-{{cookiecutter.comment}}
-    {% endif %}
-
---><script type="application/javascript">
-// END BLOCK
-
-
-
-// this dict is available under PyConfig.config from __main__
-
-config = {
-    xtermjs : "1" ,
-    _sdl2 : "canvas",
-    user_canvas : 0,
-    user_canvas_managed : 0,
-    ume_block : 1,
-    can_close : 1,
-    archive : "src",
-    gui_debug : 3,
-    cdn : "https://pygame-web.github.io/archives/0.9/",
-    autorun : 0,
-    PYBUILD : "3.12"
+<!DOCTYPE html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-T7HFKFX0PR"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-T7HFKFX0PR');
+    </script>
+    <!-- End Google tag (gtag.js) -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation Earth - Cellular Automata</title>
+    <meta name="description"
+content="Explore dynamic simulations of Earth's ecosystems through interactive cellular automata.">
+<meta name="keywords" content="simulation, earth, cellular automata, ecosystems, temperature">
+    <meta name="author" content="Dor Pascal">
+    <meta name="robots" content="index, follow">
+    <meta name="revisit-after" content="3 months">
+    <meta name="language" content="en">
+    <meta name="generator" content="Visual Studio Code">
+    <meta name="distribution" content="global">
+    <meta name="rating" content="general">
+    <meta property="og:title" content="Simulation Earth">
+    <meta property="og:description"
+        content="Explore dynamic simulations of Earth's ecosystems through interactive cellular automata.">
+    <meta property="og:url" content="https://dorpascal.com/simulation-earth">
+    <meta property="og:site_name" content="Simulation Earth">
+    <meta property="og:locale" content="he_IL">
+    <meta property="og:type" content="website">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta property="og:locale:alternate" content="ar_IL">
+    <meta property="og:image" content="https://dorpascal.com/simulation-earth/images/output.gif">
+    <meta name="theme-color" content="#081d07">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="favicon.png" type="image/png">
+    <link rel="canonical" href="https://dorpascal.com/simulation-earth">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background: #081d07;
+            color: #fff;
+            padding: 1rem 0;
+            text-align: center;
+            margin-bottom: 1rem;
+            box-shadow: 2px 2px 14px #81ffe9;
+        }
+        .container {
+            width: 80%;
+            max-width: 900px;
+            margin: auto;
+            overflow: hidden;
+        }
+        h1 {
+            color: #f4f4f4;
+            text-shadow: 2px 2px 14px #81ffe9;
+        }
+        h2, h3 {
+            color: #272727;
+        }
+        p {
+            margin: 1rem 0;
+        }
+        img {
+            max-width: 80%;
+            height: auto;
+            cursor: pointer;
+        }
+        .center {
+            text-align: center;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        ul li {
+            background: #e3e3e3;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-left: 5px solid #081d07;
+        }
+button {
+    background: #98BBF3; /* Lighter blue for the background */
+    color: #1A1A1A; /* Almost black for text */
+    padding: 0.5rem 1rem;
+    margin: 1em auto;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 5px;
+    font-size: large;
+    border: 2px solid #BFD7ED; /* Soft blue for border */
+    box-shadow: 2px 2px 14px #AFCCE8; /* Slightly darker shade for shadow */
+    margin-top: 2rem;
+    margin-bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px' width='100' height='100' viewBox='0 0 64 64'%3E%3Cpath fill='%231A1A1A' d='M23,45V19l21.914,13L23,45z M56.177,16.832c-0.547-4.731-4.278-8.462-9.009-9.009C43.375,7.384,38.264,7,32,7 S20.625,7.384,16.832,7.823c-4.731,0.547-8.462,4.278-9.009,9.009C7.384,20.625,7,25.736,7,32s0.384,11.375,0.823,15.168 c0.547,4.731,4.278,8.462,9.009,9.009C20.625,56.616,25.736,57,32,57s11.375-0.384,15.168-0.823 c4.731-0.547,8.462-4.278,9.009-9.009C56.616,43.375,57,38.264,57,32S56.616,20.625,56.177,16.832z'%3E%3C/path%3E%3C/svg%3E");
+    background-size: 20px;
+    background-blend-mode: overlay;
+    background-repeat: no-repeat;
+    background-position: left center;
+    padding-left: 1.5rem;
 }
 
-</script>
-
-    <title>src</title>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="viewport" content="height=device-height, initial-scale=1.0">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes"/>
-
-    <link rel="prefetch" href="https://pygame-web.github.io/archives/0.9/pythonrc.py">
-    <link rel="prefetch" href="https://pygame-web.github.io/archives/0.9/vt/xterm.js">
-    <link rel="prefetch" href="https://pygame-web.github.io/archives/0.9/vt/xterm-addon-image.js">
-    <link rel="prefetch" href="https://pygame-web.github.io/archives/0.9/vt/xterm-addon-image.js">
-
-
-    <link rel="icon" type="image/png" href="favicon.png" sizes="16x16">
-
-    <style>
-        #status {
-            display: inline-block;
-            vertical-align: top;
-            margin-top: 20px;
-            margin-left: 30px;
-            font-weight: bold;
-            color: rgb(120, 120, 120);
+button:hover {
+    background: #BFD7ED; /* Light blue for hover */
+    box-shadow: 2px 2px 14px #AFCCE8; /* Slightly darker shade for hover */
+}
+        header a {
+        text-decoration: none;
+        color: #fff;
+        margin: 0 0.5rem;
         }
 
-        #progress {
-            height: 20px;
-            width: 300px;
-        }
+        @media (max-width: 600px) {
+            .container {
+                width: 95%;
+                padding: 0;
+            }
 
-        div.emscripten { text-align: center; }
-        div.emscripten_border { border: 1px solid black; }
-        div.thick_border { border: 4px solid black; }
-
-        /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-        /* average size of droid screen 470dp x 320dp  */
-        canvas.emscripten {
-            border: 0px none;
-            background-color: transparent;
-            width: 100%;
-            height: 100%;
-            z-index: 5;
-
-            padding: 0;
-            margin: 0 auto;
-
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
-        }
-
-        body {
-            font-family: arial;
-            margin: 0;
-            padding: none;
-            background-color:powderblue;
-        }
-
-        .topright{
-           position:absolute;
-           top:0px;
-           right:0px;
-        }
-
-        .bottomright {
-            position:absolute;
-            top: 40%;
-            right: 0px;
-        }
-
-        .center {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .trinfo{
-           position:relative;
-           right:0px;
-           border: 1px solid black;
-        }
-
-        .framed{
-           position:relative;
-           top:150px;
-           right:10px;
-           border: 1px solid black;
+            img {
+                max-width: 100%;
+            }
         }
     </style>
 
-    <script src="https://pygame-web.github.io/archives/0.9//browserfs.min.js"></script>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" defer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/autoloader/prism-autoloader.min.js"defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/line-numbers/prism-line-numbers.min.js"defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/line-highlight/prism-line-highlight.min.js"defer></script>
 </head>
-
 <body>
+    <header>
+        <h1>🌍 Simulation Earth</h1>
 
-    <div id="transfer" align=center>
-<!--        <div class="spinner" id='spinner'></div> -->
-        <div class="emscripten" id="status">Downloading...</div>
-        <div class="emscripten">
-            <progress value="0" max="100" id="progress"></progress>
-        </div>
-    </div>
+    <a href="https://github.com/Dor-sketch/simulation-earth/stargazers" aria-label="Star Dor-sketch/simulation-earth on GitHub" title="Star Dor-sketch/simulation-earth on GitHub" target="_blank">
+        <img src="https://img.shields.io/github/stars/Dor-sketch/simulation-earth?style=social" alt="GitHub stars">
+    </a>
+    <!-- GitHub Forks -->
+    <a href="https://github.com/Dor-sketch/simulation-earth/network/members" aria-label="Fork Dor-sketch/simulation-earth on GitHub" title="Fork Dor-sketch/simulation-earth on GitHub" target="_blank">
+        <img src="https://img.shields.io/github/forks/Dor-sketch/simulation-earth?style=social" alt="GitHub forks">
+    </a>
+    <!-- License -->
+    <a href="https://github.com/Dor-sketch/simulation-earth/blob/master/LICENSE" aria-label="License" title="License" target="_blank">
+        <img src="https://img.shields.io/github/license/Dor-sketch/simulation-earth" alt="License">
+    </a>
+    <!-- Last Commit -->
+    <a href="http://github.com/Dor-sketch/simulation-earth/commits/main" aria-label="Last Commit" title="Last Commit" target="_blank">
+        <img src="https://img.shields.io/github/last-commit/Dor-sketch/simulation-earth" alt="Last Commit">
+    </a>
+    <a href="https://dorpascal.com" aria-label="Dor Pascal's Portfolio" title="Dor Pascal's Portfolio" _target="blank">
+        <img src="https://img.shields.io/badge/Portfolio-Dor%20Pascal-blue" alt="Dor Pascal's Portfolio">
+    </a>
+    </header>
 
-
-    <canvas class="emscripten" id="canvas"
-width="1px"
-height="1px"
-    oncontextmenu="event.preventDefault()" tabindex=1>
-    </canvas>
-
-    <div id=html></div>
-
-    <div id=crt  class=bottomright >
-
-        <div id="system" hidden>
-            <div class="button-container">
-                <button id="aiostop" disabled>AIO ⏏︎</button>
-                <button id="aiopaused_true" disabled>AIO ■</button>
-                <button id="aiopaused_false" disabled>AIO ▶</button>
-                <button id="pygame_mixer_music_pause" disabled>Music ■</button>
+<button id="loadGameButton" aria-label="Load Game" title="Load Simulation">Load Simulation</button>
+<iframe id="gameFrame" width="100%" height="600px" style="border: none; display: none;"></iframe>
+<div class="container">
+        <article>
+        <section>
+        <h2>Overview</h2>
+            <p>Welcome to "Simulation Earth" - a groundbreaking project that models our planet using the principles of <code class="language-python">cellular automata</code class="language-python">. Inspired by Conway's Game of Life, this 2D <code class="language-python">grid-based simulation</code class="language-python"> vividly illustrates the complexity of Earth's ecosystems.</p>
+            <p>In each cell of the grid, diverse ecosystems are represented, ranging from seas and mountains to urban landscapes. Key environmental attributes like temperature, wind speed, rainfall, and pollution levels are dynamically simulated. As each generation progresses, the cells' states evolve, creating a rich tapestry of interconnected ecological phenomena.</p>
+            <p>Developed for the <strong>Biological Computation</strong> class at the <em>Open University of Israel</em> in 2024, this project earned a perfect score of <code class="language-python">100/100</code class="language-python">.</p>
+            <blockquote><strong>Update:</strong> The project is now available as an online executable on <a href="https://dor-sketch.itch.io/simulation-earth">itch.io</a> for easy access and exploration, as well as in this documentation for detailed insights and analysis. For more projects, check out the <a href="https://dorpascal.com" target="_blank">portfolio</a>.</blockquote>
+            <div class="center">
+                <img src="images/output.gif" alt="Simulation Earth" loading="lazy"
             </div>
-
-            <div class="button-container">
-                <div id=load_min>min</div>
-                <div id=load_avg>avg</div>
-                <div id=load_max>max</div>
-              <button id="load_rst" disabled>RESET</button>
+        </section>
+        <se
+        <nav>
+            <ul>
+                <li><a href="#background">🌳 Background</a></li>
+                <li><a href="#key-features">🌟 Key Features</a></li>
+                <li><a href="#getting-started">🚀 Getting Started</a></li>
+                <li><a href="#insights-and-usage">💡 Insights and Usage</a></li>
+                <li><a href="#technical-implementation">🛠️ Technical Implementation</a></li>
+                <li><a href="#screenshots">🖼️ Screenshots</a></li>
+                <li><a href="#license">📜 License</a></li>
+                <li><a href="#contact">📫 Contact</a></li>
+            </ul>
+        </nav>
+        <section id="background">
+            <h2>🌳 Background</h2>
+            <p>A cellular automata is a Computation model that is based on a world (grid) of cells, where each cell has a state and a set of rules that determine the state of the cell in the next generation. The rules are based on the state of the cell and the state of its neighbours. The rules are applied to all cells in the grid at the same time, and the next generation is calculated based on the current generation.</p>
+            <p>The cellular automata model is a powerful tool for modeling complex systems, such as ecosystems, traffic flow, and even social dynamics. The model is based on the idea that complex systems can emerge from simple rules and interactions between individual elements. By simulating the interactions between individual elements, the model can capture the emergent properties of the system as a whole.</p>
+            <p>For more information about cellular automata, see <a href="https://en.wikipedia.org/wiki/Cellular_automaton">Wikipedia</a>.</p>
+            <p>This project is a simulation of Earth's ecosystem using cellular automata. The simulation is based on a 2D grid of cells, where each cell represents a different part of the ecosystem, such as the sea, mountains, or urban areas. The cells have different attributes, such as temperature, wind speed, rainfall, and pollution levels. The simulation evolves over time, with the cells' states changing based on the rules of the simulation.</p>
+        </section>
+        <section id="key-features">
+            <h2>🌟 Key Features</h2>
+            <div class="center">
+                <img src="images/new_gui1.png" alt="Simulation Earth">
             </div>
-
-            <div id="level">(battery level unknown)</div>
-            <div id="stateBattery">(charging state unknown)</div>
-
-        </div>
-
-        <div id=box class="emscripten_border" hidden=true>
-
-            <div id="info" class="trinfo"></div>
-
-            <iframe id="iframe" class="framed" name="iframe"
-width="470px" height="90%"
-allowtransparency="true"
-style="z-index: 10;"
-style="background: #FFFFFF;"
-frameborder="1"
-                allowfullscreen="true"
-                webkitallowfullscreen="true"
-                msallowfullscreen="true"
-                mozallowfullscreen="true"
-                sandbox="allow-same-origin allow-top-navigation allow-scripts allow-pointer-lock"
-                allow="autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr; cross-origin-isolated"
-                src="https://pygame-web.github.io/archives/0.9/empty.html"
-                scrolling="yes">
-            </iframe>
-        </div>
-
+            <ul>
+                <li>🌐 <strong>Dynamic World Modeling:</strong> Explore complex cause-effect relationships as each cell's behavior evolves based on its environment and neighboring cells.</li>
+                <li>🖥️ <strong>Real-time Visualization:</strong> Watch ecological patterns unfold in real time, with the ability to adjust initial conditions and monitor the simulation's progress.</li>
+                <li>🔩 <strong>Modular Design:</strong> Experiment with different simulation rules and initial states, adaptable to scenarios from board games to real-world ecosystem modeling.</li>
+                <li>📊 <strong>Statistical Analysis:</strong> Delve into detailed statistics such as average values, standard deviation, and standard error, enriching the analytical depth.</li>
+            </ul>
+        </section>
+        <section id="getting-started">
+            <h2>🚀 Getting Started</h2>
+            <h3>📦 Requirements</h3>
+            <p>- <code class="language-python">matplotlib</code class="language-python">: Powers the visualizations.<br>
+            - <code class="language-python">tkinter</code class="language-python">: Drives the GUI interface.</p>
+            <h3>🏃 Running the Simulation</h3>
+            <ol>
+                <li><strong>Prepare the Environment:</strong> Ensure <code class="language-python">csv</code class="language-python"> files are placed in the same directory as the program.</li>
+                <li><strong>Launch the Simulation:</strong>
+                    <pre><code class="language-python">python3 grid.py
+# If multiple Python versions are installed:
+python3.11 grid.py</code class="language-python"></pre>
+                </li>
+                <li><strong>Customize Your Experience:</strong> Modify simulation parameters, select initial states, and apply rules through the intuitive GUI.</li>
+            </ol>
+            <h3>🧪 Testing and Analysis</h3>
+            <p>- <strong>Example State:</strong> Discover with <code class="language-python">enums.csv</code class="language-python">, which provides a sample initial state.<br>
+            - <strong>Rich Data:</strong> Access comprehensive statistics for in-depth analysis and insights.<br>
+            - <strong>Rule Exploration:</strong> Dive into various ecological outcomes by experimenting with different initial states and rules.</p>
+            <div class="center">
+                <p>Example Rule Exploration:</p>
+                <img src="images/rule1.png" alt="Rule Exploration">
+                <img src="images/rule2.png" alt="Rule Exploration">
+                <img src="images/rule3.png" alt="Rule Exploration">
+            </div>
+        </section>
+        <section id="insights-and-usage">
+            <h2>💡 Insights and Usage</h2>
+            <p>"Simulation Earth" is more than just a project; it's a journey into the interconnectedness of our environment. Through detailed testing and rule adjustment, we've uncovered significant correlations between pollution levels and other environmental aspects. The <code class="language-python">manually increase temperature</code class="language-python"> rule, for example, demonstrates the profound impact of individual factors on the broader ecosystem.</p>
+        </section>
+        <section id="technical-implementation">
+            <h2>🛠️ Technical Implementation</h2>
+            <ul>
+                <li>🧬 <strong>Cellular Automaton Core:</strong> A seamless blend of Python's capabilities with the core theories of cellular automata.</li>
+                <li>🎲 <strong>State and Neighbors:</strong> Cells in a 2D array (<code class="language-python">CA.py</code class="language-python">) each possess a unique state (<code class="language-python">states.py</code class="language-python">) and a Moore neighborhood configuration.</li>
+                <li>🏷️ <strong>Custom Enum Classes:</strong> Enhance rule implementation and maintain finite state values, ensuring robustness and preventing errors.</li>
+                <li>📏 <strong>Grid and GUI Separation:</strong> The <code class="language-python">grid</code class="language-python"> class (<code class="language-python">grid.py</code class="language-python">) handles cell layout and state transitions, while the <code class="language-python">GUI</code class="language-python"> class (<code class="language-python">GUI.py</code class="language-python">) manages simulation control.</li>
+                <li>👨‍⚖️ <strong>Dynamic Rules and Initial States:</strong> The <code class="language-python">rules.py</code class="language-python"> and <code class="language-python">enums.csv</code class="language-python"> files enable easy customization of simulation rules and initial states.</li>
+            </ul>
+            <h3>🛠️ Advanced Coding Techniques and Concepts</h3>
+            <p>The project's simple appearance belies the advanced techniques and concepts that underpin the simulation. By examining specific code snippets, including the <code class="language-python">update_state</code class="language-python"> method from the <code class="language-python">Cell</code class="language-python"> class and rules from the <code class="language-python">TransitionRules</code class="language-python"> class, we can explore how these advanced techniques contribute to a robust, adaptable, and user-friendly simulation environment.</p>
+            <h4>Key Code Snippets:</h4>
+            <h5>1. Cell Class - State Update Method:</h5>
+            <pre><code class="language-python">def update_state(self):
+    rules = TransitionRules(self)
+    with rules:
+        return rules.apply_rules()</code class="language-python"></pre>
+            <h5>2. TransitionRules Class - Sample Rules for Rain, Air Quality, and Temperature:</h5>
+            <pre><code class="language-python">{
+    'name': 'TEMP: Pollution increases temperature',
+    'enabled': True,
+    'condition': lambda neighborhood: neighborhood['center'].air_pollution > AirQuality.CLEAN,
+    'action': lambda neighborhood: setattr(neighborhood['center'], 'temperature', neighborhood['center'].temperature + neighborhood['center'].air_pollution.value)
+},</code class="language-python"></pre>
+            <h5>3. Custom Comparable Enum Class:</h5>
+            <pre><code class="language-python">class ComparableEnum(Enum):
+    # Custom comparison methods (__lt__, __le__, __gt__, __ge__)
+    ...</code class="language-python"></pre>
+            <h5>4. Dynamic GUI Interaction:</h5>
+            <pre><code class="language-python">def setup_rules_checkboxes(self):
+    # GUI setup for dynamic rule modification
+    ...
+def update_rule_state(self, rule, var):
+    # Method to update rule state based on GUI interaction
+    ...</code class="language-python"></pre>
+            <h4>Analysis of Techniques:</h4>
+            <ul>
+                <li><strong>Enhanced Encapsulation in the Cell Class:</strong> The <code class="language-python">Cell</code class="language-python"> class demonstrates encapsulation, managing its state internally. The <code class="language-python">update_state</code class="language-python"> method leverages <code class="language-python">TransitionRules</code class="language-python"> to handle state transitions, keeping the logic neatly contained.</li>
+                <li><strong>Complex Rule-Based Logic in TransitionRules:</strong> The selected rules illustrate the complexity of interactions within the simulation. Each rule encapsulates specific environmental logic, such as how rain, air quality, and temperature interact with other elements.</li>
+                <li><strong>Context Manager for Controlled Rule Application:</strong> The <code class="language-python">TransitionRules</code class="language-python"> class employs a context manager to apply rules in a controlled and precise manner. This ensures that the simulation's state changes are coherent and that side effects are minimized.</li>
+                <li><strong>Dynamic GUI for Real-Time Interactivity:</strong> The GUI setup enables real-time, dynamic modifications of the simulation rules, showcasing an advanced level of user interactivity and responsiveness to user inputs.</li>
+                <li><strong>Type Safety and Flexibility with Custom Enums:</strong> The <code class="language-python">ComparableEnum</code class="language-python"> class extends Python's Enum, facilitating easy comparisons crucial for rule implementation. This ensures type safety and enhances the simulation's flexibility in modeling complex environmental interactions.</li>
+            </ul>
+            <p>These advanced techniques not only demonstrate robust programming practices but also underscore the project's dedication to creating a sophisticated, adaptable, and user-friendly simulation environment.</p>
+        </section>
+        <section id="screenshots">
+            <h2>🖼️ Screenshots</h2>
+            <p><em>Explore the GUI Interface and Statistics Panels</em></p>
+            <div class="center">
+                <img src="images/new_gui2.png" alt="Simulation Earth">
+            </div>
+            <p><em>Delve into Detailed Statistical Analysis Over Time</em></p>
+            <div class="center">
+                <img src="images/new_gui3.png" alt="Statistics">
+            </div>
+            <p><em>Uncover the Correlation Between Pollution and Temperature</em></p>
+            <div class="center">
+                <img src="images/pollution_temp_connection.png" alt="Pollution-Temperature Connection">
+            </div>
+            <div class="center">
+                <img src="images/close2.png" alt="Close-up">
+                <img src="images/close1.png" alt="Close-up">
+            </div>
+        </section>
+        <section id="license">
+            <h2>📜 License</h2>
+            <p>This project is open-sourced under the MIT License - see the <a href="LICENSE">LICENSE</a> file for details.</p>
+        </section>
+        <section id="contact">
+            <h2>📫 Contact</h2>
+            <p>For inquiries, collaborations, or more information, feel free to connect with me on <a href="https://www.linkedin.com/in/dor-pascal/">LinkedIn</a>.</p>
+        </section>
+        </article>
     </div>
+    <script>
+document.getElementById('loadGameButton').addEventListener('click', function() {
+    document.getElementById('gameFrame').src = "game.html";
+    document.getElementById('gameFrame').style.display = 'block';
+    // hide the button after loading the game
+    document.getElementById('loadGameButton').style.display = 'none';
+});
 
 
-    <div id="dlg" hidden>
-        <input type="file" id="dlg_multifile" multiple accept="image/*">
-        <label for="dlg_multifile">Select files</label>
-    </div>
 
-    <div id="pyconsole">
-        <div id="terminal" tabIndex=1 align="left"></div>
-    </div>
-
-    <script type="application/javascript">
-
-    async function custom_onload(debug_hidden) {
-        // this is called before anything python is loaded
-        // make your js customization here
-        console.log(__FILE__, "custom_onload")
-
-        pyconsole.hidden = debug_hidden
-        system.hidden = debug_hidden
-        transfer.hidden = debug_hidden
-        info.hidden = debug_hidden
-        box.hidden =  debug_hidden
-
-    }
-
-    function custom_prerun(){
-        // no python main and no (MEMFS + VFS) yet.
-        console.log(__FILE__, "custom_prerun")
-
-    }
-
-    function custom_postrun(){
-        // python main and no VFS filesystem yet.
-        console.log(__FILE__, "custom_postrun")
-
-        // prevent ff horizontal scroll
-        window.addEventListener("keydown", function(e) {
-            if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
-                if (!python.config.debug)
-                    e.preventDefault();
-            }
-        }, false);
-
-    }
-
-    function debug() {
-        // allow to gain access to dev tools from js console
-        // but only on desktop. difficult to reach when in iframe
-        python.config.debug = true
-        custom_onload(false)
-        Module.PyRun_SimpleString("shell.uptime()")
-        window_resize()
-    }
-
-    function info_inline(data){
-        document.getElementById("info").innerHTML = data
-    }
-
-    function info_online(url) {
-        // display info about current APK
-        fetch( url /*, options */)
-            .then((response) => response.text())
-            .then((html) => {
-                info_inline(html);
-        })
-        .catch((error) => {
-            console.warn(error);
-        });
-    }
-
-    function frame_online(url) {
-        window.frames["iframe"].location = url;
-    }
-
-    </script>
-
+document.querySelectorAll('img').forEach((img) => {
+    img.addEventListener('click', function() {
+        window.open(this.src, '_blank');
+    });
+    img.setAttribute('title', 'Click to view image in full size'); // Set a general title for all images
+    img.setAttribute('alt', 'Image description'); // Set a general alt text for all images
+});
+</script>
 </body>
 </html>
